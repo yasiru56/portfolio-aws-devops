@@ -1,0 +1,59 @@
+name: Deploy website
+
+# WHEN to run
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "infra/**"
+      - "**.md"
+  workflow_dispatch: # also lets you run it by hand with a button
+
+# Only one deploy at a time
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# Settings (not secret)
+env:
+  AWS_REGION: ap-southeast-2
+  S3_BUCKET: yasiru-portfolio-093736401854
+  CLOUDFRONT_DISTRIBUTION_ID: E1L6M6CXXU0CUK
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Get the code
+        uses: actions/checkout@v5
+
+      - name: 🔧 Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 📦 Install packages
+        run: npm ci
+
+      - name: 🏗️ Build the website
+        run: npm run build
+        env:
+          GENERATE_SOURCEMAP: false
+
+      - name: 🔑 Log in to AWS
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🪣 Upload files to S3
+        run: aws s3 sync build/ s3://${{ env.S3_BUCKET }} --delete
+
+      - name: 🧹 Clear CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
