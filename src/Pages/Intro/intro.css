@@ -196,3 +196,46 @@
 .intro--leaving .intro__button {
   opacity: 0;
 }
+
+/* Entrance: once the scene is ready the button rises into place, then its border pulses while it waits */
+.intro--ready .intro__button {
+  animation: intro-button-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+}
+
+.intro--ready .intro__button::before {
+  animation: intro-border-pulse 2.4s ease-in-out 1.3s infinite alternate;
+}
+
+/* the pulse would override the focus color, so keep focus clearly visible */
+.intro--ready .intro__button:focus-visible::before {
+  animation: none;
+}
+
+@keyframes intro-button-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes intro-border-pulse {
+  from {
+    background-color: var(--intro-text);
+  }
+
+  to {
+    background-color: var(--intro-accent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro--ready .intro__button,
+  .intro--ready .intro__button::before {
+    animation: none;
+  }
+}
